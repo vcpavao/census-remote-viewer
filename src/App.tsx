@@ -52,6 +52,7 @@ function App() {
         parseFloat(place[3]) > 0 &&
         places.length > 0
       ) {
+        //  Refactor hardcoding into dropdown
         closestCity(place, 5000, places);
         /*closestCity(place, 10000);
       closestCity(place, 100000);*/
