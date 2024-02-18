@@ -1,11 +1,90 @@
 import { useEffect, useState } from "react";
 import Papa from "papaparse";
-import { isEmpty } from "lodash";
+import { isEmpty, isNumber } from "lodash";
+import {
+  Box,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+} from "@mui/material";
+import { SelectChangeEvent } from "@mui/material";
 
 function App() {
-  const [displayFiveKPlaces, setDisplayFiveKPlaces] = useState<any[]>([]);
-  const [displayTenKPlaces, setDisplayTenKPlaces] = useState<any[]>([]);
-  const [displayHundKPlaces, setDisplayHundKPlaces] = useState<any[]>([]);
+  const [allPlaces, setAllPlaces] = useState<string[][]>([]);
+  const [displayPlaces, setDisplayPlaces] = useState<any[]>([]);
+
+  const [selectedPopulation, setSelectedPopulation] = useState("500");
+  const [selectedState, setSelectedState] = useState("Alabama");
+
+  const states = [
+    "Alabama",
+    "Alaska",
+    "Arizona",
+    "Arkansas",
+    "California",
+    "Colorado",
+    "Connecticut",
+    "Delaware",
+    "Florida",
+    "Georgia",
+    "Hawaii",
+    "Idaho",
+    "Illinois",
+    "Indiana",
+    "Iowa",
+    "Kansas",
+    "Kentucky",
+    "Louisiana",
+    "Maine",
+    "Maryland",
+    "Massachusetts",
+    "Michigan",
+    "Minnesota",
+    "Mississippi",
+    "Missouri",
+    "Montana",
+    "Nebraska",
+    "Nevada",
+    "New Hampshire",
+    "New Jersey",
+    "New Mexico",
+    "New York",
+    "North Carolina",
+    "North Dakota",
+    "Ohio",
+    "Oklahoma",
+    "Oregon",
+    "Pennsylvania",
+    "Rhode Island",
+    "South Carolina",
+    "South Dakota",
+    "Tennessee",
+    "Texas",
+    "Utah",
+    "Vermont",
+    "Virginia",
+    "Washington",
+    "West Virginia",
+    "Wisconsin",
+    "Wyoming",
+    "Puerto Rico",
+  ];
+  const dropdownOptions = [
+    "500",
+    "1K",
+    "2K",
+    "3K",
+    "4K",
+    "5K",
+    "10K",
+    "25K",
+    "50K",
+    "100K",
+    "500K",
+  ];
 
   useEffect(() => {
     fetch("./data/all_places.csv")
@@ -13,9 +92,19 @@ function App() {
       .then((v) => Papa.parse<any>(v))
       .then((responseText) => {
         //console.log(responseText);
-        calculateDistances(responseText.data);
+        setAllPlaces(responseText.data);
       });
   }, []);
+
+  const handlePopulationChange = (event: SelectChangeEvent) => {
+    setDisplayPlaces([]);
+    setSelectedPopulation(event.target.value as string);
+  };
+
+  const handleStateChange = (event: SelectChangeEvent) => {
+    setDisplayPlaces([]);
+    setSelectedState(event.target.value as string);
+  };
 
   const haversine_distance = (
     latitude1: number,
@@ -45,20 +134,24 @@ function App() {
     return d;
   };
 
-  async function calculateDistances(places: string[][]) {
-    for (let place of places) {
-      if (
-        place[1] === "Wyoming" &&
-        parseFloat(place[3]) > 0 &&
-        places.length > 0
-      ) {
-        //  Refactor hardcoding into dropdown
-        closestCity(place, 5000, places);
-        /*closestCity(place, 10000);
-      closestCity(place, 100000);*/
+  useEffect(() => {
+    async function calculateDistances() {
+      for (let place of allPlaces) {
+        if (
+          place[1] === selectedState &&
+          parseFloat(place[3]) > 0 &&
+          allPlaces.length > 0
+        ) {
+          const rawPop = selectedPopulation?.replace("K", "000");
+          closestCity(place, parseInt(rawPop), allPlaces);
+        }
       }
     }
-  }
+
+    calculateDistances();
+  }, [selectedState, selectedPopulation, allPlaces]);
+
+  console.log(displayPlaces);
 
   async function closestCity(
     place: string[],
@@ -95,8 +188,8 @@ function App() {
       }
     }
     if (closestDistance < 100000000) {
-      setDisplayFiveKPlaces((fiveKPlaces) => [
-        ...fiveKPlaces,
+      setDisplayPlaces((places) => [
+        ...places,
         { curString, retStr, closestDistance },
       ]);
     }
@@ -105,54 +198,86 @@ function App() {
   //console.log(displayFiveKPlaces)
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th scope="col" colSpan={3}>
-            Places farthest from a 3K+ place
-          </th>
-          <th scope="col" colSpan={3}>
-            Places farthest from a 10K+ place
-          </th>
-          <th scope="col" colSpan={3}>
-            Places farthest from a 100K+ place
-          </th>
-        </tr>
-        <tr>
-          <th scope="col">Place</th>
-          <th scope="col">Nearest Place</th>
-          <th scope="col">Distance Away</th>
-          <th scope="col">Place</th>
-          <th scope="col">Nearest Place</th>
-          <th scope="col">Distance Away</th>
-          <th scope="col">Place</th>
-          <th scope="col">Nearest Place</th>
-          <th scope="col">Distance Away</th>
-        </tr>
-      </thead>
-      <tbody>
-        {displayFiveKPlaces
-          ?.filter((k, s) => s < 2000)
-          .sort((a, b) => b.closestDistance - a.closestDistance)
-          .map((place) => {
-            return (
-              <tr>
-                <th scope="row">{place?.curString}</th>
-                <td>{place?.retStr}</td>
-                <td>{place?.closestDistance?.toFixed(3)}</td>
-              </tr>
-            );
-          })}
-      </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row" colSpan={2}>
-            Average age
-          </th>
-          <td>33</td>
-        </tr>
-      </tfoot>
-    </table>
+    <Box>
+      <Stack>
+        <h2>2020 Census Distance Factfinder</h2>
+        <Grid container spacing={2}>
+          <Grid item xs={3}>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">State</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={selectedState}
+                label="State"
+                onChange={handleStateChange}
+              >
+                {states.map((o) => {
+                  return <MenuItem value={o}>{o}</MenuItem>;
+                })}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={3}>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">
+                Population Threshold
+              </InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={selectedPopulation}
+                label="Population Threshold"
+                onChange={handlePopulationChange}
+              >
+                {dropdownOptions.map((o) => {
+                  return <MenuItem value={o}>{o}</MenuItem>;
+                })}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Stack>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" colSpan={3}>
+              {isNumber(selectedPopulation) &&
+                `Places farthest from a ${selectedPopulation}+ place`}
+            </th>
+          </tr>
+          <tr>
+            <th scope="col">Place</th>
+            <th scope="col">Nearest Place</th>
+            <th scope="col">Distance Away</th>
+          </tr>
+        </thead>
+        {displayPlaces.length > 0 ? (
+          <tbody>
+            {displayPlaces
+              ?.filter((k, s) => s < 2000)
+              .sort((a, b) => b.closestDistance - a.closestDistance)
+              .map((place) => {
+                return (
+                  <tr>
+                    <th scope="row">{place?.curString}</th>
+                    <td>{place?.retStr}</td>
+                    <td>{place?.closestDistance?.toFixed(3)}</td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        ) : (
+          <p>Loading...</p>
+        )}
+        <tfoot>
+          <tr>
+            <th scope="row" colSpan={2}></th>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </Box>
   );
 }
 
