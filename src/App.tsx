@@ -87,7 +87,7 @@ function App() {
   ];
 
   useEffect(() => {
-    fetch("./data/all_places.csv")
+    fetch("./assets/data/all_places.csv")
       .then((response) => response.text())
       .then((v) => Papa.parse<any>(v))
       .then((responseText) => {
