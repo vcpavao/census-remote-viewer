@@ -255,7 +255,7 @@ function App() {
         {displayPlaces.length > 0 ? (
           <tbody>
             {displayPlaces
-              ?.filter((k, s) => s < 2000)
+              ?.filter(({}, s) => s < 2000)
               .sort((a, b) => b.closestDistance - a.closestDistance)
               .map((place) => {
                 return (
